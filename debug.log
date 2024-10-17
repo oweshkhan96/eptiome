@@ -1,0 +1,41 @@
+Executing command: python3 fetch_stock_data.py TCS.NS 1
+Command output: 'python3' is not recognized as an internal or external command,
+operable program or batch file.
+
+Command executed: C:\Path\To\Python\python.exe fetch_stock_data.py TCS.NS 1
+Command output: 
+Command executed: C:\Path\To\Python\python.exe fetch_stock_data.py TCS.NS 1
+Command output: 
+Command executed: C:\Path\To\Python\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: The system cannot find the path specified.
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: [*********************100%***********************]  1 of 1 completed
+{"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: [*********************100%***********************]  1 of 1 completed
+{"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: [*********************100%***********************]  1 of 1 completed
+{"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: [*********************100%***********************]  1 of 1 completed
+{"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: [*********************100%***********************]  1 of 1 completed
+{"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: Traceback (most recent call last):
+  File "d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py", line 7, in <module>
+    yf.pd.options.mode.chained_assignment = None  # default='warn'
+    ^^^^^
+AttributeError: module 'yfinance' has no attribute 'pd'
+
+Command executed: C:\Users\owesh\AppData\Local\Programs\Python\Python312\python.exe d:\Softwares\Xampp\htdocs\test\fetch_stock_data.py TCS.NS 1
+Command output: {"historicalPrices": [{"time": 1728950400000, "open": 4131.0498046875, "high": 4169.9501953125, "low": 4095.0, "close": 4116.7998046875}]}
+
