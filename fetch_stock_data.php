@@ -24,22 +24,27 @@ $daysMapping = [
 ];
 
 $days = $daysMapping[$timeSpan] ?? null;
+
+
 if ($days === null) {
     echo json_encode(['error' => 'Invalid timespan provided']);
     exit();
 }
 
+
 $pythonPath = "C:\\Users\\owesh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe";
 $scriptPath = "d:\\Softwares\\Xampp\\htdocs\\test\\fetch_stock_data.py";
 
-$command = escapeshellcmd("$pythonPath $scriptPath $stocks $days");
 
+$command = escapeshellcmd("$pythonPath $scriptPath $stocks $days");
 $output = shell_exec($command);
+
 
 if ($output === null) {
     echo json_encode(['error' => 'Failed to execute Python script']);
     exit();
 }
+
 
 $jsonOutput = json_decode($output, true);
 if (json_last_error() !== JSON_ERROR_NONE) {

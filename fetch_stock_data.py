@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta
 
 def fetch_stock_data(symbol, days, interval='1m'):
-    end_date = datetime.now()
+    end_date = datetime.now() + timedelta(days=1)
     start_date = end_date - timedelta(days=days)
 
     data = yf.download(symbol, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), interval=interval, progress=False)
@@ -15,7 +15,7 @@ def fetch_stock_data(symbol, days, interval='1m'):
     historical_prices = []
     for index, row in data.iterrows():
         historical_prices.append({
-            'time': int(index.timestamp() * 1000),  #milliseconds
+            'time': int(index.timestamp() * 1000),  # milliseconds
             'open': row['Open'],
             'high': row['High'],
             'low': row['Low'],

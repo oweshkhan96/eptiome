@@ -1,9 +1,11 @@
 <div class="sidebar">
     <a href="dashboard.php">Dashboard</a>
+    <a href="dashboard2.php">Trading Viewer</a>
     <a href="watchlist.php">Watchlist</a>
     <a href="user_control.php">User Control</a>
     <a href="settings.php">Settings</a>
     <a href="bot_management.php">Bot Management</a>
+    <a href="Overview.php">Overview</a>
     <a href="strategy.php">Strategy</a>
 </div>
 

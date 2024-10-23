@@ -2,32 +2,89 @@
 session_start();
 require 'db_config.php';
 
+
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'admin') {
+    echo "
+    <html>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>Access Denied</title>
+            <script>
+                setTimeout(function(){
+                    window.location.href = 'dashboard.php';
+                }, 3000); 
+            </script>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    background-color: #f8f9fa;
+                }
+                .message-box {
+                    text-align: center;
+                    border: 1px solid #343a40;
+                    padding: 30px;
+                    background-color: #fff;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                }
+                .message-box h1 {
+                    color: #dc3545;
+                }
+                .message-box p {
+                    font-size: 16px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class='message-box'>
+                <h1>Access Denied</h1>
+                <p>Only admins can access this page.</p>
+                <p>You will be redirected to the dashboard in a few seconds.</p>
+            </div>
+        </body>
+    </html>";
+    exit(); 
+}
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_user'])) {
     $user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-    $stmt->bind_param("i", $user_id);
 
-    if ($stmt->execute()) {
-        $message = "<p class='alert success'>User deleted successfully!</p>";
-    } else {
-        $message = "<p class='alert error'>Error deleting user: " . htmlspecialchars($stmt->error) . "</p>";
+    if ($stmt = $conn->prepare("DELETE FROM users WHERE id = ?")) {
+        $stmt->bind_param("i", $user_id);
+        if ($stmt->execute()) {
+            $message = "<p class='alert success'>User deleted successfully!</p>";
+        } else {
+            $message = "<p class='alert error'>Error deleting user: " . htmlspecialchars($stmt->error) . "</p>";
+        }
+        $stmt->close();
     }
 }
 
-$result = $conn->query("SELECT * FROM users");
 
+$result = $conn->query("SELECT * FROM users");
 if (!$result) {
     die("Error fetching users: " . htmlspecialchars($conn->error));
 }
 
+
+$user = [];
 if (isset($_SESSION['user_id'])) {
-    $stmt = $conn->prepare("SELECT profile_picture, username FROM users WHERE id = ?");
-    $stmt->bind_param("i", $_SESSION['user_id']);
-    $stmt->execute();
-    $user_result = $stmt->get_result();
-    $user = $user_result->fetch_assoc();
+    if ($stmt = $conn->prepare("SELECT profile_picture, username FROM users WHERE id = ?")) {
+        $stmt->bind_param("i", $_SESSION['user_id']);
+        $stmt->execute();
+        $user_result = $stmt->get_result();
+        $user = $user_result->fetch_assoc();
+        $stmt->close();
+    }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -69,7 +126,7 @@ if (isset($_SESSION['user_id'])) {
         .profile-icon-container {
             display: flex;
             align-items: center;
-            margin-right: 30px; 
+            margin-right: 30px;
         }
 
         .profile-icon {
@@ -93,29 +150,29 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .logout-button {
-            margin-left: 20px; 
+            margin-left: 20px;
             background-color: red;
             color: white;
             padding: 8px 15px;
             border-radius: 5px;
-            text-decoration: none; 
+            text-decoration: none;
             font-weight: bold;
             transition: background-color 0.3s;
         }
 
         .logout-button:hover {
-            background-color: darkred; 
+            background-color: darkred;
         }
 
         .sidebar {
-            width: 250px; 
+            width: 250px;
             background-color: #343a40;
             padding: 20px;
             color: white;
-            height: calc(100vh - 60px); 
-            position: fixed; 
-            overflow-y: auto; 
-            transition: width 0.3s; 
+            height: calc(100vh - 60px);
+            position: fixed;
+            overflow-y: auto;
+            transition: width 0.3s;
         }
 
         .sidebar a {
@@ -124,7 +181,7 @@ if (isset($_SESSION['user_id'])) {
             display: block;
             margin: 10px 0;
             padding: 10px;
-            border-radius: 5px; 
+            border-radius: 5px;
             transition: background-color 0.3s;
         }
 
@@ -133,13 +190,13 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .container {
-            margin-left: 290px; 
+            margin-left: 290px;
             padding: 10px;
-            flex: 1; 
+            flex: 1;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            transition: margin-left 0.3s; 
+            transition: margin-left 0.3s;
         }
 
         h2 {
@@ -147,10 +204,6 @@ if (isset($_SESSION['user_id'])) {
             font-weight: 700;
             margin-bottom: 20px;
             color: #343a40;
-        }
-
-        p {
-            margin-bottom: 20px; 
         }
 
         table {
@@ -202,7 +255,7 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .edit-button:hover {
-            background-color: #0056b3; 
+            background-color: #0056b3;
         }
 
         .alert {
@@ -211,11 +264,11 @@ if (isset($_SESSION['user_id'])) {
         }
 
         .alert.success {
-            color: #28a745; 
+            color: #28a745;
         }
 
         .alert.error {
-            color: #dc3545; 
+            color: #dc3545;
         }
 
         @media (max-width: 768px) {
@@ -231,18 +284,15 @@ if (isset($_SESSION['user_id'])) {
 </head>
 <body>
     <div class="header">
-        <div class="company-name">
-            Epitome
-        </div>
+        <div class="company-name">Epitome</div>
         <div class="profile-icon-container">
             <a href="profile.php">
                 <div class="profile-icon">
                     <?php 
                     if (!empty($user['profile_picture'])) {
-                        $profile_picture = htmlspecialchars($user['profile_picture']);
-                        echo "<img src='$profile_picture' alt='Profile Picture' class='profile-img'>";
+                        echo "<img src='" . htmlspecialchars($user['profile_picture']) . "' alt='Profile Picture' class='profile-img'>";
                     } else {
-                        echo strtoupper($user['username'][0]); 
+                        echo strtoupper(htmlspecialchars($user['username'][0]));
                     }
                     ?>
                 </div>
@@ -275,19 +325,19 @@ if (isset($_SESSION['user_id'])) {
             <tbody>
                 <?php if ($result->num_rows > 0): ?>
                     <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['id']); ?></td>
-                        <td><?php echo htmlspecialchars($row['username']); ?></td>
-                        <td><?php echo htmlspecialchars($row['email']); ?></td>
-                        <td><?php echo htmlspecialchars($row['user_type']); ?></td>
-                        <td>
-                            <a href="edit_user.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Edit</a>
-                            <form method="POST" style="display:inline;">
-                                <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                <input type="submit" name="delete_user" value="Delete">
-                            </form>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td><?php echo htmlspecialchars($row['id']); ?></td>
+                            <td><?php echo htmlspecialchars($row['username']); ?></td>
+                            <td><?php echo htmlspecialchars($row['email']); ?></td>
+                            <td><?php echo htmlspecialchars($row['user_type']); ?></td>
+                            <td>
+                                <a href="edit_user.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Edit</a>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
+                                    <input type="submit" name="delete_user" value="Delete">
+                                </form>
+                            </td>
+                        </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>

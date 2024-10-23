@@ -171,9 +171,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             <?php if (isset($redirect) && $redirect): ?>
                 <script>
-                    setTimeout(function() {
-                        window.location.href = 'user_control.php';
-                    }, 2000);
+                    // Redirecting to user_control.php after a successful update
+                    window.location.href = 'user_control.php';
                 </script>
             <?php endif; ?>
         </div>

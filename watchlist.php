@@ -8,6 +8,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
+$userStmt = $conn->prepare("SELECT profile_picture FROM users WHERE id = ?");
+$userStmt->bind_param("i", $userId);
+$userStmt->execute();
+$userResult = $userStmt->get_result();
+$user = $userResult->fetch_assoc();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['stock_symbol'])) {
     $stockSymbol = strtoupper(trim($_POST['stock_symbol']));
@@ -46,6 +51,60 @@ $watchlistStmt->bind_param("i", $userId);
 $watchlistStmt->execute();
 $watchlistResult = $watchlistStmt->get_result();
 
+
+function fetchStockData($symbols) {
+    if (empty($symbols)) {
+        return ['error' => 'No stock symbols provided.'];
+    }
+    
+    $symbolList = implode(",", $symbols); 
+    $days = 30; 
+    $command = "python top_stocks.py \"$symbolList\" $days"; 
+
+    $output = [];
+    $returnVar = 0;
+
+    exec($command . ' 2>&1', $output, $returnVar);
+
+    if ($returnVar !== 0) {
+        return ['error' => 'Failed to fetch stock data.'];
+    }
+
+    $data = json_decode(implode("", $output), true); 
+
+    return [
+        'topGainers' => $data['topGainers'] ?? [],
+        'topLosers' => $data['topLosers'] ?? []
+    ]; 
+}
+
+function getStockSymbolsFromDatabase($conn, $userId) {
+    $symbols = [];
+    $sql = "SELECT stock_symbol FROM watchlist WHERE user_id = ?"; 
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $symbol = $row['stock_symbol'];
+            if (strpos($symbol, 'BSE:') === false && strpos($symbol, '.NS') !== false) {
+                $symbols[] = $symbol;
+            }
+        }
+    }
+
+    return $symbols;
+}
+
+$watchlistSymbols = getStockSymbolsFromDatabase($conn, $userId);
+$stockData = fetchStockData($watchlistSymbols);
+
+$topGainers = $stockData['topGainers'] ?? [];
+$topLosers = $stockData['topLosers'] ?? [];
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -54,8 +113,7 @@ $watchlistResult = $watchlistStmt->get_result();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Watchlist - Epitome</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https:
     <style>
         body {
             margin: 0;
@@ -180,7 +238,7 @@ $watchlistResult = $watchlistStmt->get_result();
 
         input[type="text"] {
             padding: 10px;
-            width: 100%;
+            width: 50%;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -227,71 +285,136 @@ $watchlistResult = $watchlistStmt->get_result();
         .remove-button:hover {
             background-color: darkred;
         }
+
+        .stock-section {
+            margin-top: 30px;
+        }
+
+        .stock-section h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ff0000;
+        }
+
+        .stock-section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .stock-section th, .stock-section td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stock-section th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">
-            Epitome
-        </div>
-        <div class="profile-icon-container">
-            <a href="profile.php">
-                <div class="profile-icon">
-                    <?php 
-                    $profile_picture = htmlspecialchars($user['profile_picture']);
-                    echo "<img src='$profile_picture' alt='Profile Picture' class='profile-img'>";
-                    ?>
-                </div>
-            </a>
-            <a href="logout.php" class="logout-button">Logout</a>
-        </div>
-    </div>
 
-    <div class="sidebar">
+<div class="header">
+    <div class="company-name">Epitome Watchlist</div>
+    <div class="profile-icon-container">
+        <div class="profile-icon">
+            <?php if ($user['profile_picture']): ?>
+                <img src="<?php echo htmlspecialchars($user['profile_picture']); ?>" alt="Profile Picture">
+            <?php else: ?>
+                <i class="fas fa-user"></i>
+            <?php endif; ?>
+        </div>
+        <a href="logout.php" class="logout-button">Logout</a>
+    </div>
+</div>
+
+<div class="sidebar">
         <?php include 'sidebar.php'; ?>
     </div>
 
-    <div class="container">
-        <h2>Your Watchlist</h2>
-        
-        <?php
-        if (isset($_SESSION['message'])) {
-            echo '<div class="alert">' . $_SESSION['message'] . '</div>';
-            unset($_SESSION['message']);
-        }
-        ?>
+<div class="container">
+    <h2>Your Watchlist</h2>
 
-        <form method="POST" action="watchlist.php">
-            <input type="text" name="stock_symbol" placeholder="Enter stock symbol (e.g. AAPL)" required>
-            <button type="submit">Add to Watchlist</button>
-        </form>
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="alert"><?php echo $_SESSION['message']; unset($_SESSION['message']); ?></div>
+    <?php endif; ?>
 
-        <table class="watchlist-table">
+    <form action="watchlist.php" method="POST">
+        <label for="stock_symbol">Add Stock Symbol (NSE):</label><br>
+        <input type="text" name="stock_symbol" id="stock_symbol" placeholder="E.g., RELIANCE.NS" required><br>
+        <button type="submit">Add to Watchlist</button>
+    </form>
+
+    <table class="watchlist-table">
+        <thead>
+            <tr>
+                <th>Stock Symbol</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($row = $watchlistResult->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['stock_symbol']); ?></td>
+                    <td><a href="watchlist.php?remove_id=<?php echo $row['id']; ?>" class="remove-button">Remove</a></td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+
+    <div class="stock-section">
+        <h2 style="color: #33cc33;">Top Gainers</h2>
+        <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Stock Symbol</th>
-                    <th>Added On</th>
-                    <th>Action</th>
+                    <th>Price Change (%)</th>
                 </tr>
             </thead>
             <tbody>
-                <?php
-                if ($watchlistResult->num_rows > 0) {
-                    while ($row = $watchlistResult->fetch_assoc()) {
-                        echo "<tr>";
-                        echo "<td>" . $row['id'] . "</td>";
-                        echo "<td>" . htmlspecialchars($row['stock_symbol']) . "</td>";
-                        echo "<td>" . $row['added_on'] . "</td>";
-                        echo '<td><a href="?remove_id=' . $row['id'] . '" class="remove-button">Remove</a></td>';
-                        echo "</tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='4'>No stocks in your watchlist.</td></tr>";
-                }
-                ?>
+                <?php if (count($topGainers) > 0): ?>
+                    <?php foreach ($topGainers as $gainer): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($gainer['symbol']); ?></td>
+                            <td><?php echo htmlspecialchars($gainer['priceChangePercent']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="2">No gainers found.</td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
+
+    <div class="stock-section">
+        <h2>Top Losers</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stock Symbol</th>
+                    <th>Price Change (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (count($topLosers) > 0): ?>
+                    <?php foreach ($topLosers as $loser): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($loser['symbol']); ?></td>
+                            <td><?php echo htmlspecialchars($loser['priceChangePercent']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="2">No losers found.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 </body>
 </html>
