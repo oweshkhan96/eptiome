@@ -51,7 +51,7 @@ $watchlistStmt->bind_param("i", $userId);
 $watchlistStmt->execute();
 $watchlistResult = $watchlistStmt->get_result();
 
-
+// Fetch stock data from Python script
 function fetchStockData($symbols) {
     if (empty($symbols)) {
         return ['error' => 'No stock symbols provided.'];
@@ -113,7 +113,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Watchlist - Epitome</title>
-    <link rel="stylesheet" href="https:
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -293,7 +293,7 @@ $conn->close();
         .stock-section h2 {
             font-size: 24px;
             font-weight: 600;
-            color: #ff0000;
+            color: #007bff;
         }
 
         .stock-section table {
@@ -330,8 +330,8 @@ $conn->close();
 </div>
 
 <div class="sidebar">
-        <?php include 'sidebar.php'; ?>
-    </div>
+    <?php include 'sidebar.php'; ?>
+</div>
 
 <div class="container">
     <h2>Your Watchlist</h2>
@@ -390,7 +390,7 @@ $conn->close();
     </div>
 
     <div class="stock-section">
-        <h2>Top Losers</h2>
+        <h2 style="color: red;">Top Gainers</h2>
         <table>
             <thead>
                 <tr>
