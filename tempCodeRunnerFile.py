@@ -4,92 +4,97 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 
 
-ticker = 'TCS.NS'  
-data = yf.download(ticker, start='2023-11-01', end='2023-12-31')
-df = data[['Close', 'High', 'Low']].copy()
+buy_price_limit = 10  
+quantity = 4          
+supertrend_atr = 14   
+supertrend_multiplier = 3.0  
+sl_percentage = 0.02  
 
 
-df['High-Low'] = df['High'] - df['Low']
+def calculate_supertrend(df, period, multiplier):
+    hl = (df['High'] + df['Low']) / 2
+    atr = df['Close'].rolling(window=period).apply(lambda x: np.max(x) - np.min(x), raw=True)
+
+    upper_band = hl + (multiplier * atr)
+    lower_band = hl - (multiplier * atr)
+
+    supertrend = np.where(df['Close'] <= upper_band, upper_band, lower_band)
+    return supertrend
 
 
-def calculate_supertrend(df, period=7, multiplier=3):
-    df['H-L'] = df['High'] - df['Low']
-    df['H-PC'] = (df['High'] - df['Close'].shift(1)).abs()
-    df['L-PC'] = (df['Low'] - df['Close'].shift(1)).abs()
-    df['TR'] = df[['H-L', 'H-PC', 'L-PC']].max(axis=1)  
-    df['ATR'] = df['TR'].rolling(window=period).mean()
-
-    df['UpperBand'] = (df['High'] + df['Low']) / 2 + (multiplier * df['ATR'])
-    df['LowerBand'] = (df['High'] + df['Low']) / 2 - (multiplier * df['ATR'])
-    
-    df['supertrend'] = np.nan
-    
-    for i in range(1, len(df)):
-        if i < period:
-            continue
-        if df['Close'].iloc[i] <= df['UpperBand'].iloc[i-1]:
-            df.loc[df.index[i], 'supertrend'] = df['UpperBand'].iloc[i]
-        else:
-            df.loc[df.index[i], 'supertrend'] = df['LowerBand'].iloc[i]
-
-    df['supertrend'] = df['supertrend'].ffill()
-
-    return df
+ticker = "RELIANCE.NS"
+start_date = "2024-01-01"
+end_date = "2024-10-25"
+df = yf.download(ticker, start=start_date, end=end_date)
 
 
-df = calculate_supertrend(df)
+df['SuperTrend'] = calculate_supertrend(df, supertrend_atr, supertrend_multiplier)
 
 
-df['Signal'] = 0
-df['Signal'][1:] = np.where(df['Close'][1:] > df['supertrend'][1:], 1, 0)  
-df['Signal'][1:] = np.where(df['Close'][1:] < df['supertrend'][1:], -1, df['Signal'][1:])  
+call_oi = 1000
+put_oi = 800
+trades = []
+balance = 100000  
 
-
-initial_balance = 100000  
-balance = initial_balance
-positions = 0
-entry_price = 0
-trade_log = []  
 
 for i in range(1, len(df)):
-    if df['Signal'].iloc[i] == 1 and positions == 0:  
-        positions += 1
-        entry_price = df['Close'].iloc[i]
-        trade_log.append({'Date': df.index[i], 'Type': 'Buy', 'Price': entry_price, 'Balance': balance})
+    close = df['Close'].iloc[i]
+    supertrend = df['SuperTrend'].iloc[i]
+    position_size = 0
+
+    
+    long_condition = close < supertrend and call_oi > put_oi
+    short_condition = close > supertrend and call_oi < put_oi
+
+    
+    far_otm_call_strike = close + 200
+    far_otm_put_strike = close - 200
+
+    
+    if close < buy_price_limit:
         
-    elif df['Signal'].iloc[i] == -1 and positions > 0:  
-        balance += (df['Close'].iloc[i] - entry_price) * positions  
-        trade_log.append({'Date': df.index[i], 'Type': 'Sell', 'Price': df['Close'].iloc[i], 'Balance': balance})
-        positions = 0
+        trades.append({'Date': df.index[i], 'Type': 'Buy Call/Put', 'Price': close, 'Quantity': quantity})
+        position_size += quantity
+
+    
+    if long_condition and position_size > 0:
+        
+        trades.append({'Date': df.index[i], 'Type': 'Sell Put', 'Strike': far_otm_put_strike, 'Quantity': quantity})
+        position_size -= quantity
+
+    if short_condition and position_size < 0:
+        
+        trades.append({'Date': df.index[i], 'Type': 'Sell Call', 'Strike': far_otm_call_strike, 'Quantity': quantity})
+        position_size += quantity
+
+    
+    if position_size > 0:  
+        stop_loss_price = close * (1 - sl_percentage)
+        if close <= stop_loss_price:
+            trades.append({'Date': df.index[i], 'Type': 'Exit Buy', 'Price': close, 'Quantity': quantity})
+            position_size = 0
+
+    elif position_size < 0:  
+        stop_loss_price = close * (1 + sl_percentage)
+        if close >= stop_loss_price:
+            trades.append({'Date': df.index[i], 'Type': 'Exit Sell', 'Price': close, 'Quantity': quantity})
+            position_size = 0
 
 
-if positions > 0:  
-    balance += (df['Close'].iloc[-1] - entry_price) * positions
+trades_df = pd.DataFrame(trades)
 
 
-trade_log_df = pd.DataFrame(trade_log)
-
-
-total_trades = len(trade_log_df[trade_log_df['Type'] == 'Sell'])
-profit_loss = balance - initial_balance
-win_rate = (total_trades and len(trade_log_df[trade_log_df['Type'] == 'Sell'][trade_log_df['Price'] > trade_log_df['Balance']])) / total_trades if total_trades else 0
-
-
-print(f'Final Balance: {balance:.2f}')
-print(f'Profit/Loss: {profit_loss:.2f}')
-print(f'Total Trades: {total_trades}')
-print(f'Win Rate: {win_rate:.2%}')
+print(trades_df)
 
 
 plt.figure(figsize=(14, 7))
-plt.plot(df.index, df['Close'], label='Close Price', color='blue', linewidth=1.5)
-plt.plot(df.index, df['supertrend'], label='Supertrend', color='orange', linewidth=1.5)
-plt.scatter(trade_log_df['Date'], trade_log_df[trade_log_df['Type'] == 'Buy']['Price'], marker='^', color='green', label='Buy Signal', s=100)
-plt.scatter(trade_log_df['Date'], trade_log_df[trade_log_df['Type'] == 'Sell']['Price'], marker='v', color='red', label='Sell Signal', s=100)
-
-plt.title(f'{ticker} Price and Supertrend with Buy/Sell Signals')
+plt.plot(df['Close'], label='Close Price', alpha=0.5)
+plt.plot(df['SuperTrend'], label='SuperTrend', color='blue', alpha=0.75)
+plt.title(f'{ticker} Iron Condor Strategy Backtest')
 plt.xlabel('Date')
 plt.ylabel('Price')
 plt.legend()
 plt.grid()
+plt.xticks(rotation=45)
+plt.tight_layout()
 plt.show()

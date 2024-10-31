@@ -7,6 +7,7 @@
     <a href="bot_management.php">Bot Management</a>
     <a href="Overview.php">Overview</a>
     <a href="strategy.php">Strategy</a>
+    <a href="backtest_strategy.php">BackTest Strategy</a>
 </div>
 
 <style>

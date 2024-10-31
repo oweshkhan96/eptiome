@@ -110,7 +110,7 @@ $user = $user_result->fetch_assoc();
 
     <div class="main-content">
         <h2>Welcome to the Dashboard, <?php echo htmlspecialchars($user['username']); ?>!</h2>
-        <p>Select a BSE stock from your watchlist to view its chart.</p>
+        <p>Select a stock from your watchlist to view its chart.</p>
 
         <div class="watchlist-selector">
             <label for="stockSymbol">Select Stock:</label>
@@ -163,7 +163,7 @@ $user = $user_result->fetch_assoc();
                     "enable_publishing": false,
                     "allow_symbol_change": true,
                     "hideideas": true,
-                    "studies": ["SuperTrend"],
+                    "studies": "SuperTrend",
                     "autosize": true
                 });
             }

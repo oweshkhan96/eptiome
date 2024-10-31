@@ -390,7 +390,7 @@ $conn->close();
     </div>
 
     <div class="stock-section">
-        <h2 style="color: red;">Top Gainers</h2>
+        <h2 style="color: red;">Top Losers</h2>
         <table>
             <thead>
                 <tr>

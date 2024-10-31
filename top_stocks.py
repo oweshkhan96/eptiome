@@ -10,7 +10,7 @@ def fetch_stock_data(symbol, days, interval='1d'):
     end_date = datetime.now() + timedelta(days=1)
     start_date = end_date - timedelta(days=days)
 
-    
+    # Fetch the stock data
     data = yf.download(symbol, start=start_date.strftime('%Y-%m-%d'), end=end_date.strftime('%Y-%m-%d'), interval=interval, progress=False)
 
     if data.empty:
@@ -19,7 +19,7 @@ def fetch_stock_data(symbol, days, interval='1d'):
     historical_prices = []
     for index, row in data.iterrows():
         historical_prices.append({
-            'time': int(index.timestamp() * 1000),  
+            'time': int(index.timestamp() * 1000),  # milliseconds
             'open': float(row['Open']),
             'high': float(row['High']),
             'low': float(row['Low']),
@@ -61,7 +61,7 @@ def get_top_gainers_and_losers(symbols, days):
         
         if 'error' in stock_data:
             print(f"Skipping {symbol}: {stock_data['error']}")
-            continue  
+            continue  # Skip symbols with no data
         
         price_change_percent = calculate_price_change(stock_data)
 
@@ -98,4 +98,4 @@ if __name__ == '__main__':
         print(json.dumps(result))
     except Exception as e:
         print(json.dumps({'error': str(e)}))
-        sys.exit(1)  
+        sys.exit(1)  # Exit with an error code
